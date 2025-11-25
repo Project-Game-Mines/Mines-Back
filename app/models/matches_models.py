@@ -1,27 +1,23 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
 from pydantic import Optional, List
-import random
+from enum import Enum
 
-# Função para gerar três números inteiros aleatórios entre 1 e 100
-
-def generate_random_numbers():
-    return [random.randint(1, 25) for number in range(3)]
-
-def variable_status():
-    pass
-
-class MatcheModel(BaseModel):
+class GameStatus(str, Enum):
+    RUNNING = "running"
+    WIN = "win"
+    LOSE = "lose"
+class MatchModel(BaseModel):
 
     id: Optional[str] = None
     user_id: str
     game_id: str
     bet_amount: float
-    current_step: str
-    mines_positions: List[int] = Field(default_factory=generate_random_numbers)
-    status: str
-    created_at: datetime
-    finished_at: datetime
+    current_step: int = Field(default=0)
+    mines_positions: List[int]
+    status: GameStatus = Field(default=GameStatus.RUNNING)
+    created_at: datetime = Field(default_factory=datetime.now)
+    finished_at: Optional[datetime] = None
 
     class config:
         # Permite que o Pydantic serialize para dict para inserir no Mongo -->
