@@ -1,2 +1,3 @@
 MONGO_URI=mongodb://root:root@mongo:27017
 RABBITMQ_URI=amqp://guest:guest@rabbitmq:5672
+DATABASE_NAME="mines_db"
