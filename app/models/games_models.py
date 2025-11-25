@@ -1,6 +1,10 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
+import random
+
+def generate_random_numbers():
+    return [random.randint(1, 25) for number in range(3)]
 
 class GamesModel(BaseModel):
 
@@ -8,7 +12,7 @@ class GamesModel(BaseModel):
     name: str
     is_ative = False
     total_cells = 25
-    total_mines = List[int] = Field()
+    total_mines = List[int] = Field(default_factory=generate_random_numbers)
     created_at = datetime
     update_at = datetime
 
