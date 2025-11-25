@@ -1,11 +1,13 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Optional
 from datetime import datetime
 
 class WalletModel(BaseModel):
 
+    id: Optional[str] = None
     user_id: str
-    balance: float
-    update_at: datetime  
+    balance: float = Field(default=0.0, ge=0) | None
+    updated_at: datetime = Field(default_factory=datetime.now)
 
     class Config:
         # Permite que o Pydantic serialize para dict para inserir no Mongo -->
