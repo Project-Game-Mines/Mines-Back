@@ -15,13 +15,3 @@ class TransitionModel(BaseModel):
         # Permite que o Pydantic serialize para dict para inserir no Mongo -->
         arbitrary_types_allowed = True
         json_encoders = {str: str}
-        
-    '''
-    id,
-  user_id,
-  match_id,
-  type: "debit" | "credit",
-  amount,
-  timestamp
-}
-    '''
