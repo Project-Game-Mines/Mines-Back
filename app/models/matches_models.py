@@ -8,6 +8,9 @@ import random
 def generate_random_numbers():
     return [random.randint(1, 25) for number in range(3)]
 
+def variable_status():
+    pass
+
 class MatcheModel(BaseModel):
 
     id: Optional[str] = None
@@ -24,17 +27,3 @@ class MatcheModel(BaseModel):
         # Permite que o Pydantic serialize para dict para inserir no Mongo -->
         arbitrary_types_allowed = True
         json_encoders = {str: str}
-
-    '''
-    match_id,
-  user_id,
-  game_id,
-  bet_amount,
-  current_step,
-  mines_positions: [3,7,8],  
-  status: "running" | "win" | "lose",
-  created_at,
-  finished_at
-    '''
-item1 = MatcheModel(user_id="133er", game_id="22asqq",bet_amount=25.89, current_step="alice",status="ativo")
-print(item1)
