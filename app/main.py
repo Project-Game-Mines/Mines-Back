@@ -1,7 +1,8 @@
 from fastapi import FastAPI
-from models.matches_models import MatcheModel
+from app.controllers.user_controller import UserRouter
 
 app = FastAPI(title="Mines Academy")
 
-print("Loaded at port 8000")
+app.include_router(UserRouter)
+
 
