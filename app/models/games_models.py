@@ -8,13 +8,13 @@ def generate_random_numbers():
 
 class GamesModel(BaseModel):
 
-    game_id: Optional[str] = None
+    id: Optional[str] = None
     name: str
-    is_ative = False
-    total_cells = 25
-    total_mines = List[int] = Field(default_factory=generate_random_numbers)
-    created_at = datetime
-    update_at = datetime
+    is_active: bool = False
+    total_cells: int = 25
+    total_mines: List[int] = [3, 7, 8]
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: Optional[datetime] = None
 
     class Config:
         # Permite que o Pydantic serialize para dict para inserir no Mongo -->

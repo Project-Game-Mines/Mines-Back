@@ -1,15 +1,20 @@
 from pydantic import BaseModel
-from datetime import datetime, time
+from datetime import datetime
 from typing import Optional
+from enum import Enum
 
-class TransitionModel(BaseModel):
+class TransactionType(str, Enum):
+    CREDIT = "credit"
+    DEBIT = "debit"
 
-    transition_id: Optional[str] = None
+class TransactionModel(BaseModel):
+
+    id: Optional[str] = None
     user_id: str
     match_id: str
-    type: str
+    type: TransactionType
     amount: float
-    timestamp: time
+    timestamp: datetime
 
     class Config:
         # Permite que o Pydantic serialize para dict para inserir no Mongo -->
