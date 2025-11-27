@@ -20,7 +20,7 @@ class UserService:
         return CreateUser(
             id=str(created["_id"]),
             name=created["name"],
-            create_at=created["create_at"]
+            created_at=created["created_at"]
         )
 
     def get_all_users(self) -> List[CreateUser]:
@@ -38,7 +38,7 @@ class UserService:
                     CreateUser(
                         id=str(doc["_id"]),
                         name=doc["name"],
-                        create_at=doc["create_at"]
+                        created_at=doc["created_at"]
                     ) 
                 )
             return list
@@ -52,15 +52,12 @@ class UserService:
         try:
 
             user = self.repository.get_user_by_id(user_id)
+            print("DEBUG USER FROM DB: ", user)
 
             if not user:
                 raise NotFoundError(user_id)
             
-            return CreateUser(
-                id=str(user["_id"]),
-                name=user["name"],
-                create_at=["create_ad"]
-            )
+            return CreateUser(**user)
         
         except Exception as e:
             raise Exception(f"Erro ao buscar user: {str(e)}")
