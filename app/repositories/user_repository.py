@@ -9,7 +9,7 @@ class UserRepository:
 
     def create_user(self, user_dict: dict) -> dict:
         # insere create_at automaticamente
-        user_dict["create_at"] = datetime.utcnow()
+        user_dict["created_at"] = datetime.utcnow()
 
         result = self.db.users.insert_one(user_dict)
 
@@ -20,7 +20,15 @@ class UserRepository:
         return self.db.users.find_one({"name": name})
     
     def get_user_by_id(self, user_id: str) -> Optional[dict]:
-        return self.db.users.find_one({"_id": ObjectId(user_id)})
+        user = self.db.users.find_one({"_id": ObjectId(user_id)})
+
+        if not user:
+            return None
+        
+        user["id"] = str(user["_id"])
+        del user["_id"]
+
+        return user
 
     def get_all_users(self) -> List[dict]:
         return list(self.db.users.find())
