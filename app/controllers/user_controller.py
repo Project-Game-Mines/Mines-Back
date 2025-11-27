@@ -2,6 +2,7 @@ from app.schemas.user_schema import CreateUser, UserRequest
 from fastapi import APIRouter, Depends, Request
 from app.services.user_service import UserService
 from app.repositories.user_repository import UserRepository
+from app.repositories.wallets_repository import WalletRepository
 from typing import List
 from app.database.db import get_database
 
@@ -11,8 +12,10 @@ def get_db():
     return get_database()
 
 def get_user_service(db=Depends(get_db)) -> UserService:
-    repository = UserRepository(db)
-    return UserService(repository)
+    user_repo = UserRepository(db)
+    wallet_repo = WalletRepository(db)
+
+    return UserService(user_repo, wallet_repo)
 
 @UserRouter.post("/users/register", response_model=CreateUser)
 def create_user(user: UserRequest, service: UserService = Depends(get_user_service)):
