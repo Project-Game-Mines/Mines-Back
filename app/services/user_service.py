@@ -11,24 +11,17 @@ class UserService:
 
     def create_user(self, user: CreateUser):
 
-        if self.repository.get_user_by_id(user.id):
+        if self.repository.get_user_by_name(user.name):
             raise UnauthorizedError("Usuário já existente")
         
-        else:        
-            try:
-                user_created = self.repository.create_user(user)
+        user_dict = user.model_dump(exclude_unset=True)
+        created = self.repository.create_user(user_dict)
 
-                if not user_created:
-                    raise BadRequestError("user não criado, verifique credenciais")
-                
-                return CreateUser(
-                    name=user_created["name"],
-                    create_at= user_created["create_at"]
-                )
-            
-            except Exception as e:
-                raise BadRequestError(f"Error ao criar user: {str(e)}")
-
+        return CreateUser(
+            id=str(created["_id"]),
+            name=created["name"],
+            create_at=created["create_at"]
+        )
 
     def get_all_users(self) -> List[CreateUser]:
 
@@ -45,7 +38,7 @@ class UserService:
                     CreateUser(
                         id=str(doc["_id"]),
                         name=doc["name"],
-                        create_at=["creat_at"]
+                        create_at=doc["create_at"]
                     ) 
                 )
             return list
@@ -64,7 +57,7 @@ class UserService:
                 raise NotFoundError(user_id)
             
             return CreateUser(
-                id=str(user["id"]),
+                id=str(user["_id"]),
                 name=user["name"],
                 create_at=["create_ad"]
             )
