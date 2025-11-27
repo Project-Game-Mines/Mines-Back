@@ -1,4 +1,4 @@
-from app.middlewares.exceptions.bad_request import BadRequestError
+from app.middlewares.exceptions import BadRequestError
 from app.repositories.wallets_repository import WalletRepository
 from app.schemas.wallets_schemas import WalletCreate, WalletSchemas, WalletSchemasBody
 

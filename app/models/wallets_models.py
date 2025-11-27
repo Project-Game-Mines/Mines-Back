@@ -6,8 +6,8 @@ class WalletModel(BaseModel):
 
     id: Optional[str] = None
     user_id: str
-    balance: float = Field(default=0.0, ge=0) | None
-    updated_at: datetime = Field(default_factory=datetime.now)
+    balance: float = Field(default=0.0, ge=0) 
+    updated_at: str
 
     class Config:
         # Permite que o Pydantic serialize para dict para inserir no Mongo -->

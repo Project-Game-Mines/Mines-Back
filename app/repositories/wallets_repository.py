@@ -1,6 +1,6 @@
 from datetime import datetime
 from app.schemas.wallets_schemas import WalletCreate, WalletSchemas, WalletSchemasBody
-from app.middlewares.exceptions.bad_request import BadRequestError
+from app.middlewares.exceptions import BadRequestError
 from pymongo.database import Database
 
 
