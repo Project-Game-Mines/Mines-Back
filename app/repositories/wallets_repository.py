@@ -7,6 +7,7 @@ from app.middlewares.exceptions import BadRequestError
 from pymongo.database import Database
 
 
+
 class WalletRepository:
 
     def __init__(self, db: Database):
@@ -36,15 +37,18 @@ class WalletRepository:
 
 
 
-    def debit(self, user_id: str, amount: float) -> WalletSchemas:
+    def debit(self, user_id: str, amount: float, match_id: str) -> WalletSchemas:
+
         wallet = self.collection_wallet.find_one({"user_id": user_id})
+
         if not wallet:
-            return None
+            raise BadRequestError("Carteira não encontrada")
 
         if wallet["balance"] < amount:
-            return None
+            raise BadRequestError("Saldo insuficiente")
 
         new_balance = wallet["balance"] - amount
+
         update_data = {
             "balance": new_balance,
             "updated_at": datetime.utcnow().strftime("%d/%m/%Y %H:%M")
@@ -60,10 +64,10 @@ class WalletRepository:
         tx = TransactionsSchemas(
             transition_id=str(ObjectId()),
             user_id=user_id,
-            match_id="-----HÁ FAZER------",
+            match_id=match_id,
             type="debit",
-            amount = new_balance,
-            timestamp = datetime.utcnow().strftime("%d/%m/%Y %H:%M")
+            amount=amount,   
+            timestamp=datetime.utcnow().strftime("%d/%m/%Y %H:%M")
         )
 
         self.collection_transactions.insert_one(tx.model_dump())
@@ -72,12 +76,15 @@ class WalletRepository:
 
 
 
-    def credit(self, user_id: str, amount: float) -> WalletSchemas:
+    def credit(self, user_id: str, amount: float, match_id: str) -> WalletSchemas:
+
         wallet = self.collection_wallet.find_one({"user_id": user_id})
+
         if not wallet:
-            return None
+            raise BadRequestError("Carteira não encontrada")
 
         new_balance = wallet["balance"] + amount
+
         update_data = {
             "balance": new_balance,
             "updated_at": datetime.utcnow().strftime("%d/%m/%Y %H:%M")
@@ -88,19 +95,16 @@ class WalletRepository:
             {"$set": update_data}
         )
 
-
         wallet.update(update_data)
 
         tx = TransactionsSchemas(
             transition_id=str(ObjectId()),
             user_id=user_id,
-            match_id="-----HÁ FAZER------",
+            match_id=match_id,
             type="credit",
-            amount = new_balance,
-            timestamp = datetime.utcnow().strftime("%d/%m/%Y %H:%M")
+            amount=amount,   
+            timestamp=datetime.utcnow().strftime("%d/%m/%Y %H:%M")
         )
 
         self.collection_transactions.insert_one(tx.model_dump())
-
-
         return WalletSchemas(**wallet)
