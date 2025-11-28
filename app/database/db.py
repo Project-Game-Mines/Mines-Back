@@ -2,7 +2,6 @@ from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 from app.core.config import MONGO_URI, DATABASE_NAME
 
-
 client = None
 
 def get_mongo_client():
