@@ -4,7 +4,7 @@ from app.repositories.game_config_repository import GameConfigRepository
 from app.services.game_config_service import GameConfigService
 from app.schemas.game_config_schema import CreateGameConfigSchema
 
-GameConfigRouter = APIRouter(tags=["CRUD de Game Config"])
+GameConfigRouter = APIRouter(tags=["Rotas de configuração do game"])
 
 def get_db():
     db = get_database()

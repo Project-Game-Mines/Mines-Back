@@ -8,7 +8,7 @@ from app.schemas.wallets_schemas import WalletSchemas, WalletSchemasBody
 from app.services.wallet_service import WalletService
 
 
-WalletRouter = APIRouter(tags=["Criação de Carteiras de Usuários, Debitar e Creditar seu Balanço"])
+WalletRouter = APIRouter(tags=["Rotas de Carteiras de Usuários, Debitar e Creditar seu Balanço"])
 
 
 def get_db():

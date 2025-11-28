@@ -9,7 +9,11 @@ from app.database.db import get_database
 UserRouter = APIRouter(tags=['Rotas de usuários'])
 
 def get_db():
-    return get_database()
+    db = get_database()
+    try:
+        yield db
+    finally:
+        pass
 
 def get_user_service(db=Depends(get_db)) -> UserService:
     user_repo = UserRepository(db)
