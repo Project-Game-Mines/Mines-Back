@@ -1,5 +1,8 @@
 from datetime import datetime
-from app.schemas.wallets_schemas import WalletCreate, WalletSchemas, WalletSchemasBody
+
+from bson import ObjectId
+from app.schemas.transactions_schemas import TransactionsSchemas
+from app.schemas.wallets_schemas import WalletCreate, WalletSchemas
 from app.middlewares.exceptions import BadRequestError
 from pymongo.database import Database
 
@@ -7,17 +10,18 @@ from pymongo.database import Database
 class WalletRepository:
 
     def __init__(self, db: Database):
-        self.collection = db["wallets"]
+        self.collection_wallet = db["wallets"]
+        self.collection_transactions = db["transactions"]
 
 
     def get_balance(self, user_id: str) -> WalletSchemas:
-        wallet = self.collection.find_one({"user_id": user_id})
+        wallet = self.collection_wallet.find_one({"user_id": user_id})
         if not wallet:
             return None
         return WalletSchemas(**wallet)
 
     def create_wallets(self, data: WalletCreate) -> WalletSchemas:
-        wallet_exists = self.collection.find_one({"user_id": data.user_id})
+        wallet_exists = self.collection_wallet.find_one({"user_id": data.user_id})
         if wallet_exists:
             raise BadRequestError("Carteira já existe para este usuário")
 
@@ -27,13 +31,13 @@ class WalletRepository:
             "updated_at": datetime.utcnow().strftime("%d/%m/%Y %H:%M")
         }
 
-        self.collection.insert_one(new_wallet)
+        self.collection_wallet.insert_one(new_wallet)
         return WalletSchemas(**new_wallet)
 
 
 
     def debit(self, user_id: str, amount: float) -> WalletSchemas:
-        wallet = self.collection.find_one({"user_id": user_id})
+        wallet = self.collection_wallet.find_one({"user_id": user_id})
         if not wallet:
             return None
 
@@ -46,18 +50,30 @@ class WalletRepository:
             "updated_at": datetime.utcnow().strftime("%d/%m/%Y %H:%M")
         }
 
-        self.collection.update_one(
+        self.collection_wallet.update_one(
             {"user_id": user_id},
             {"$set": update_data}
         )
 
         wallet.update(update_data)
+
+        tx = TransactionsSchemas(
+            transition_id=str(ObjectId()),
+            user_id=user_id,
+            match_id="-----HÁ FAZER------",
+            type="debit",
+            amount = new_balance,
+            timestamp = datetime.utcnow().strftime("%d/%m/%Y %H:%M")
+        )
+
+        self.collection_transactions.insert_one(tx.model_dump())
+
         return WalletSchemas(**wallet)
 
 
 
     def credit(self, user_id: str, amount: float) -> WalletSchemas:
-        wallet = self.collection.find_one({"user_id": user_id})
+        wallet = self.collection_wallet.find_one({"user_id": user_id})
         if not wallet:
             return None
 
@@ -67,10 +83,24 @@ class WalletRepository:
             "updated_at": datetime.utcnow().strftime("%d/%m/%Y %H:%M")
         }
 
-        self.collection.update_one(
+        self.collection_wallet.update_one(
             {"user_id": user_id},
             {"$set": update_data}
         )
 
+
         wallet.update(update_data)
+
+        tx = TransactionsSchemas(
+            transition_id=str(ObjectId()),
+            user_id=user_id,
+            match_id="-----HÁ FAZER------",
+            type="credit",
+            amount = new_balance,
+            timestamp = datetime.utcnow().strftime("%d/%m/%Y %H:%M")
+        )
+
+        self.collection_transactions.insert_one(tx.model_dump())
+
+
         return WalletSchemas(**wallet)

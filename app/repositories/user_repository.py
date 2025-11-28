@@ -8,8 +8,8 @@ class UserRepository:
         self.db = db
 
     def create_user(self, user_dict: dict) -> dict:
-        # insere create_at automaticamente
-        user_dict["created_at"] = datetime.utcnow()
+
+        user_dict["created_at"] = datetime.utcnow().strftime("%d/%m/%Y-%H:%M")
 
         result = self.db.users.insert_one(user_dict)
 

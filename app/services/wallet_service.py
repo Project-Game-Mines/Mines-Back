@@ -26,6 +26,7 @@ class WalletService:
 
     
     def debit(self, data: WalletSchemasBody) -> WalletSchemas:
+
         if data.amount <= 0:
             raise BadRequestError("O valor deve ser maior que 0")
 
