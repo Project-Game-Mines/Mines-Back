@@ -7,6 +7,7 @@ class GameStatus(str, Enum):
     RUNNING = "running"
     WIN = "win"
     LOSE = "lose"
+    
 class MatchModel(BaseModel):
 
     id: Optional[str] = None
