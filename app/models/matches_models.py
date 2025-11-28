@@ -1,14 +1,15 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
-from pydantic import Optional, List
+from typing import Optional, List
 from enum import Enum
 
 class GameStatus(str, Enum):
     RUNNING = "running"
     WIN = "win"
     LOSE = "lose"
-class MatchModel(BaseModel):
 
+
+class MatchModel(BaseModel):
     id: Optional[str] = None
     user_id: str
     game_id: str
@@ -16,10 +17,11 @@ class MatchModel(BaseModel):
     current_step: int = Field(default=0)
     mines_positions: List[int]
     status: GameStatus = Field(default=GameStatus.RUNNING)
-    created_at: datetime = Field(default_factory=datetime.now)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
     finished_at: Optional[datetime] = None
 
-    class config:
-        # Permite que o Pydantic serialize para dict para inserir no Mongo -->
+    class Config:
         arbitrary_types_allowed = True
-        json_encoders = {str: str}
+        json_encoders = {
+            datetime: lambda v: v.isoformat(),
+        }
