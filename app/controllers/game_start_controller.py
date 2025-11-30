@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.core.config import RABBITMQ_URI
+
 from app.database.db import get_database
-from app.core.ws_global import WS_GLOBAL_MANAGER
-
-
 
 from app.schemas.game_start_schemas import GameStartRequest, GameStartResponse
 from app.services.game_services import GameService
+
 from app.repositories.match_repository import MatchRepository
 from app.repositories.wallets_repository import WalletRepository
 # from app.repositories.game_config_repository import GameConfigRepository
@@ -37,18 +36,13 @@ def get_game_service(db=Depends(get_db)) -> GameService:
     wallet_repo = WalletRepository(db)
     # config_repo = GameConfigRepository(db["games_config"])
 
-    # *** MUDANÇA: Inicializar RabbitMQ corretamente ***
-    rabbitmq = RabbitMQPublisher(RABBITMQ_URI)
-    
-    # *** MUDANÇA: Usar explicitamente o WebSocketManager global ***
-    websocket_manager = WS_GLOBAL_MANAGER  # ← EXPLÍCITO AGORA
+    rabbitmq = RabbitMQPublisher(RABBITMQ_URI) 
 
     # GameService sem config_repo, add dps
     return GameService(
         match_repo=match_repo,
         wallet_repo=wallet_repo,
-        rabbitmq=rabbitmq,
-        websocket_manager=websocket_manager
+        rabbitmq=rabbitmq
     )
 
 

@@ -1,15 +1,15 @@
 import random
 from datetime import datetime
 
-from fastapi import HTTPException
+from app.middlewares.exceptions import InternalServerError
 
 from app.repositories.match_repository import MatchRepository
 from app.repositories.wallets_repository import WalletRepository
 # from app.repositories.game_config_repository import GameConfigRepository
 
 from app.utils.rabbitmq import RabbitMQPublisher
-from app.utils.websocket_manager import WebSocketManager
-# from app.utils.rabbitmq import create_exchange
+
+from app.controllers.game_ws_controller import ws_send_to_user 
 
 
 
@@ -21,13 +21,12 @@ class GameService:
         wallet_repo: WalletRepository,
         # config_repo: GameConfigRepository,
         rabbitmq: RabbitMQPublisher,
-        websocket_manager: WebSocketManager,
     ):
         self.match_repo = match_repo
         self.wallet_repo = wallet_repo
         # self.config_repo = config_repo
         self.rabbitmq = rabbitmq
-        self.websocket_manager = websocket_manager
+       
 
     async def start_game(self, user_id: str, bet_amount: float):
         """
@@ -58,7 +57,7 @@ class GameService:
             "_id": 1,
             "name": "Mines Academy",
             "is_active": True,
-            "total_cells": 10,
+            "total_cells": 24,
             "total_mines": 3,
             "created_at": "N/A",
             "updated_at": "N/A"
@@ -74,7 +73,7 @@ class GameService:
         # 3) sortear minas
         mine_positions = random.sample(range(total_cells), total_mines)
 
-        # 4) criar match (antes do debit para ter o match_id)
+        # 4) criar match (antes do debit para ter o match id)
         match_payload = {
             "user_id": user_id,
             "game_id": game_id,
@@ -91,38 +90,43 @@ class GameService:
         # 5) debitar aposta usando match_id
         self.wallet_repo.debit(user_id, bet_amount, match_id)
 
-        #6 criar exchange
+        # 6 criar exchange e queue
 
-        
-        # 6) publicar GAME_STARTED via RabbitMQ
-        self.rabbitmq.publish(
-            exchange="mines.events", #mudar ou deixar o mesmo
-            routing_key="GAME_STARTED",
-            body={
-                "event": "GAME_STARTED",
-                "matchId": match_id,
-                "userId": user_id,
-                "totalCells": total_cells,
-                "totalMines": total_mines
-            }
+        self.rabbitmq.create_exchange("mines.events")
+        self.rabbitmq.create_queue(
+            queue="mines.games",
+            exchange="mines.events",
+            routing_key="GAME_STARTED"
         )
+        
 
-        # 7) notificar WebSocket
-        if self.websocket_manager:
-            try:
-
-                await self.websocket_manager.send_to_user(user_id, {
+        # 7) notificar WebSocket e RabbitMQ do evento GAME_STARTED
+        try:
+            # publicar GAME_STARTED via RabbitMQ
+            self.rabbitmq.publish(
+                exchange = "mines.events", 
+                routing_key = "GAME_STARTED",
+                body = {
                     "event": "GAME_STARTED",
                     "matchId": match_id,
+                    "userId": user_id,
                     "totalCells": total_cells,
                     "totalMines": total_mines
-                })
-            except:
-                raise HTTPException(500, "sla")
+                }
+            )
+            # publicar GAME_STARTED via WEBSOCKETS
+            await ws_send_to_user(user_id, {
+                "event": "GAME_STARTED",
+                "matchId": match_id,
+                "totalCells": total_cells,
+                "totalMines": total_mines
+            })
+
+        except Exception as e:
+            raise InternalServerError(f"Não foi possivel publicar GAME_STARTED via RabbitMQ ou WEBSOCKETS: {e}")
             
 
-        # 8) retorno ao Unity
-        print(f"chega aqui!!!!")
+        # 8) retorno do POST
         return {
             "match_id": match_id,
             "total_cells": total_cells,
