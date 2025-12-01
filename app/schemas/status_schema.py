@@ -14,4 +14,4 @@ class GameStatusResponse(BaseModel):
     finished_at: Optional[str] = None
 
 class GameStatusRequest(BaseModel):
-    match_id: str 
+    match_id: str
