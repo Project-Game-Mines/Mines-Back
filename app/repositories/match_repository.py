@@ -1,5 +1,8 @@
+from bson import ObjectId
 from pymongo.collection import Collection
-from app.models.matches_models import MatchModel
+
+from app.middlewares.exceptions import NotFoundError
+
 
 class MatchRepository:
     def __init__(self, collection: Collection):
@@ -18,3 +21,11 @@ class MatchRepository:
         result = self.collection.insert_one(data)
         return str(result.inserted_id)
 
+    def get_match_by_id(self, match_id):
+        try:
+            result = self.collection.find_one({"_id": ObjectId(match_id)})
+            if not result:
+                raise NotFoundError(f'Partida não encontrada')
+            return result
+        except:
+            pass
