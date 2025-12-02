@@ -28,15 +28,21 @@ app.include_router(GameStepRouter)
 # Handler de Eventos
 rabbitmq = RabbitMQPublisher(RABBITMQ_URI)
 
+rabbitmq.create_exchange("mines.events")
+rabbitmq.create_queue(
+    queue="mines.games",
+    exchange="mines.events",
+    routing_key="GAME_STARTED"
+)
 def handle_event(event):
     asyncio.create_task(ws_broadcast(event))
 
 
 @app.on_event("startup")
 async def startup_event():
-    '''rabbitmq.start_consumer(
+    rabbitmq.start_consumer(
         queue="mines.games",
         callback=handle_event
-    )'''
+    )
 
 print("Loaded at port 8000")
