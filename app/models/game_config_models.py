@@ -1,15 +1,15 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 
 class GameConfigModel(BaseModel):
 
-    id: Optional[str] = None
+    id: Optional[str] = Field(alias="_id", default=None)
     name: str
     is_active: bool = False
     total_cells: int = 25
-    total_mines: List[int] = [3, 7, 8]
-    created_at: datetime = Field(default_factory=datetime.now)
+    total_mines: int = 3
+    created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: Optional[datetime] = None
 
     class Config:
