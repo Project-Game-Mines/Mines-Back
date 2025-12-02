@@ -1,4 +1,5 @@
 from bson import ObjectId
+from typing import Dict, Any
 from app.schemas.game_config_schema import CreateGameConfigSchema
 
 class GameConfigRepository:
@@ -21,3 +22,8 @@ class GameConfigRepository:
         
         return game_config_dict
 
+    def update_game_config(self, game_id: str, update_data: Dict[str, Any]):
+        return self.db.game_config.find_one_and_update(
+            {"_id": ObjectId(game_id)},
+            {"$set": update_data}
+        )
