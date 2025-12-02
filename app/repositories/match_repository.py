@@ -10,10 +10,10 @@ class MatchRepository:
         self.collection = collection
 
     def create_match(self, match):
-    # Se vier um Pydantic Model:
+
         if hasattr(match, "model_dump"):
             data = match.model_dump()
-        # Se já for um dict:
+
         elif isinstance(match, dict):
             data = match
         else:
