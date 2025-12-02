@@ -39,6 +39,7 @@ class GameStepService:
 
         # 1) procura e valida a partida
         mines_match = self.match_repo.get_match_by_id(matches_id)
+        # config = self.config_repo.get_active_config(mines_match['game_id'])
         if not mines_match:
             raise NotFoundError("Partida não encontrada")
 
@@ -46,10 +47,9 @@ class GameStepService:
             raise UnauthorizedError('Esse jogo já se finalizou, requisição negada!')
         
         # 1.5) Pegar current step do repositorio de config
-        # config = self.config_repo.get_active_config(mines_match['game_id'])
         # total_cells = config['total_cells']
         # teste:
-        total_cells = 24
+        total_cells = 25
 
         user_id = mines_match["user_id"]
         bet_amount = mines_match["bet_amount"]

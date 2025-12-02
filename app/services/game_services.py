@@ -10,6 +10,7 @@ from app.repositories.wallets_repository import WalletRepository
 from app.utils.rabbitmq import RabbitMQPublisher
 
 from app.controllers.game_ws_controller import ws_send_to_user 
+import uuid
 
 
 
@@ -54,7 +55,7 @@ class GameService:
         # 2) pegar configuração ativa
         # config = self.config_repo.get_active_config()
         config = {
-            "_id": 1,
+            "_id": uuid.uuid4(),
             "name": "Mines Academy",
             "is_active": True,
             "total_cells": 24,
