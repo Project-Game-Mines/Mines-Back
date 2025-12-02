@@ -1,17 +1,14 @@
 import random
+import uuid
 from datetime import datetime
 
 from app.middlewares.exceptions import InternalServerError
-
 from app.repositories.match_repository import MatchRepository
 from app.repositories.wallets_repository import WalletRepository
 # from app.repositories.game_config_repository import GameConfigRepository
 
 from app.utils.rabbitmq import RabbitMQPublisher
-
-from app.controllers.game_ws_controller import ws_send_to_user 
-import uuid
-
+from app.utils.dispatcher import dispatch_event
 
 
 class GameService:
@@ -51,11 +48,10 @@ class GameService:
         elif bet_amount <= 0:
             raise Exception("Não deve apostar 0 ou menos")
 
-
         # 2) pegar configuração ativa
         # config = self.config_repo.get_active_config()
         config = {
-            "_id": uuid.uuid4(),
+            "_id": 1,
             "name": "Mines Academy",
             "is_active": True,
             "total_cells": 24,
@@ -91,41 +87,32 @@ class GameService:
         # 5) debitar aposta usando match_id
         self.wallet_repo.debit(user_id, bet_amount, match_id)
 
-        # 6 criar exchange e queue
-
+        # 6) criar exchange e queue
         self.rabbitmq.create_exchange("mines.events")
         self.rabbitmq.create_queue(
             queue="mines.games",
             exchange="mines.events",
             routing_key="GAME_STARTED"
         )
-        
 
         # 7) notificar WebSocket e RabbitMQ do evento GAME_STARTED
         try:
-            # publicar GAME_STARTED via RabbitMQ
-            self.rabbitmq.publish(
-                exchange = "mines.events", 
-                routing_key = "GAME_STARTED",
-                body = {
-                    "event": "GAME_STARTED",
+            await dispatch_event(
+                self.rabbitmq,
+                user_id,
+                "GAME_STARTED",
+                {
                     "matchId": match_id,
                     "userId": user_id,
                     "totalCells": total_cells,
                     "totalMines": total_mines
                 }
             )
-            # publicar GAME_STARTED via WEBSOCKETS
-            await ws_send_to_user(user_id, {
-                "event": "GAME_STARTED",
-                "matchId": match_id,
-                "totalCells": total_cells,
-                "totalMines": total_mines
-            })
 
         except Exception as e:
-            raise InternalServerError(f"Não foi possivel publicar GAME_STARTED via RabbitMQ ou WEBSOCKETS: {e}")
-            
+            raise InternalServerError(
+                f"Não foi possivel publicar GAME_STARTED via RabbitMQ ou WEBSOCKETS: {e}"
+            )
 
         # 8) retorno do POST
         return {

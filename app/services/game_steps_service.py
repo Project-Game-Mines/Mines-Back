@@ -1,9 +1,9 @@
-from app.controllers.game_ws_controller import ws_send_to_user
 from app.middlewares.exceptions import NotFoundError, UnauthorizedError
 # from app.repositories.game_config_repository import GameConfigRepository
 from app.repositories.match_repository import MatchRepository
 from app.repositories.wallets_repository import WalletRepository
 from app.utils.rabbitmq import RabbitMQPublisher
+from app.utils.dispatcher import dispatch_event
 
 
 class GameStepService:
@@ -63,43 +63,27 @@ class GameStepService:
             # publicar GAME_WIN via Rabbitmq
             prize = bet_amount * 2
 
-            self.rabbitmq.publish(
-                exchange="mines.events",
-                routing_key="GAME_WIN",
-                body={
-                    "event": "GAME_WIN",
-                    "prize": prize
-                }
+            await dispatch_event(
+                self.rabbitmq,
+                user_id,
+                "GAME_WIN",
+                {"prize": prize}
             )
-            # publicar GAME_WIN via WEBSOCKETS
-            await ws_send_to_user(user_id, {
-                "event": "GAME_WIN",
-                "prize": prize
-            })
 
-            # Envia evento BALANCE_UPDATEd
-
-            self.rabbitmq.publish(
-                exchange="mines.events",
-                routing_key="BALANCE_UPDATED",
-                body={
-                    "event": "BALANCE_UPDATED",
-                    "balance": prize
-                }
+            # Envia evento BALANCE_UPDATED
+            await dispatch_event(
+                self.rabbitmq,
+                user_id,
+                "BALANCE_UPDATED",
+                {"balance": prize}
             )
-            # publicar BALANCE_UPDATED via WEBSOCKETS
-            await ws_send_to_user(user_id, {
-                "event": "BALANCE_UPDATED",
-                "balance": prize
-            })
 
             # Credita aposta X 2
             self.wallet_repo.credit(user_id, prize, matches_id)
+            self.match_repo.finish_match(matches_id, current_step + 1, "win")
 
             # Finalizar partida
             return {"event": "GAME_WIN", "prize": prize}
-
-
 
         # variavel da carteira
         wallet = self.wallet_repo.get_balance(user_id)
@@ -110,14 +94,13 @@ class GameStepService:
         if cell in mines_positions:
 
             # Se for mina:
-            # publicar GAME_LOSE via Rabbitmq
-            self.rabbitmq.publish(
-                exchange="mines.events",
-                routing_key="GAME_LOSE",
-                body={"event": "GAME_LOSE"}
+            # publicar GAME_LOSE via Rabbitmq + WS
+            await dispatch_event(
+                self.rabbitmq,
+                user_id,
+                "GAME_LOSE",
+                {}
             )
-            # publicar GAME_LOSE via WEBSOCKETS
-            await ws_send_to_user(user_id, {"event": "GAME_LOSE"})
 
             # Finalizar partida
             self.match_repo.finish_match(matches_id, mines_match['current_step'], "lose")
@@ -125,22 +108,16 @@ class GameStepService:
             return {"event": "GAME_LOSE"}
 
         # Se não for mina:
-        # publicar STEP_RESULT via Rabbitmq
-        self.rabbitmq.publish(
-            exchange="mines.events",
-            routing_key="STEP_RESULT",
-            body={
-                "event": "STEP_RESULT",
+        # publicar STEP_RESULT via Rabbitmq + WS
+        await dispatch_event(
+            self.rabbitmq,
+            user_id,
+            "STEP_RESULT",
+            {
                 "step": cell,
                 "isMine": False
             }
         )
-        # publicar STEP_RESULT via WEBSOCKETS
-        await ws_send_to_user(user_id, {
-            "event": "STEP_RESULT",
-            "step": cell,
-            "isMine": False
-        })
 
         # atualizar step no banco
         self.match_repo.update_step(matches_id, current_step + 1)
