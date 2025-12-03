@@ -59,10 +59,9 @@ class GameStepService:
         # 2) Se for última casa:
         safe_cells = total_cells - len(mines_positions)
         if current_step + 1 >= safe_cells:
-            # Envia evento GAME_WIN
-            # publicar GAME_WIN via Rabbitmq
+            
             prize = bet_amount * 2
-
+            # Envia evento GAME_WIN
             await dispatch_event(
                 self.rabbitmq,
                 user_id,

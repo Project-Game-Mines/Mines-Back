@@ -3,6 +3,7 @@ from pydantic import BaseModel
 class GameStartRequest(BaseModel):
     user_id: str
     bet_amount: float
+    total_mines: int
 
 
 class GameStartResponse(BaseModel):

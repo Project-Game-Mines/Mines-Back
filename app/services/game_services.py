@@ -2,7 +2,7 @@ import random
 import uuid
 from datetime import datetime
 
-from app.middlewares.exceptions import InternalServerError
+from app.middlewares.exceptions import InternalServerError, UnauthorizedError
 from app.repositories.match_repository import MatchRepository
 from app.repositories.wallets_repository import WalletRepository
 # from app.repositories.game_config_repository import GameConfigRepository
@@ -26,7 +26,7 @@ class GameService:
         self.rabbitmq = rabbitmq
        
 
-    async def start_game(self, user_id: str, bet_amount: float):
+    async def start_game(self, user_id: str, bet_amount: float, total_mines: int):
         """
         Fluxo:
         validar aposta (saldo)
@@ -47,33 +47,18 @@ class GameService:
             raise Exception("Saldo insuficiente")
         elif bet_amount <= 0:
             raise Exception("Não deve apostar 0 ou menos")
+        
+        if total_mines > 20:
+            raise UnauthorizedError('quantidade de minas invalida!!')
+        
+        total_cells = 24
+        mine_positions = random.sample(range(total_cells), total_mines)
 
         # 2) pegar configuração ativa
         # config = self.config_repo.get_active_config()
-        config = {
-            "_id": 1,
-            "name": "Mines Academy",
-            "is_active": True,
-            "total_cells": 24,
-            "total_mines": 3,
-            "created_at": "N/A",
-            "updated_at": "N/A"
-        }
-
-        if not config:
-            raise Exception("Nenhuma configuração de jogo ativa encontrada")
-
-        game_id = str(config["_id"])
-        total_cells = int(config["total_cells"])
-        total_mines = int(config["total_mines"])
-
-        # 3) sortear minas
-        mine_positions = random.sample(range(total_cells), total_mines)
-
         # 4) criar match (antes do debit para ter o match id)
         match_payload = {
             "user_id": user_id,
-            "game_id": game_id,
             "bet_amount": float(bet_amount),
             "current_step": 0,
             "mines_positions": mine_positions,
@@ -82,12 +67,14 @@ class GameService:
             "finished_at": None
         }
 
+        if not match_payload:
+            raise Exception("Nenhuma configuração do jogo ativa encontrada")
+
+
         match_id = self.match_repo.create_match(match_payload)
 
         # 5) debitar aposta usando match_id
         self.wallet_repo.debit(user_id, bet_amount, match_id)
-
-        # 6) criar exchange e queue
         
 
         # 7) notificar WebSocket e RabbitMQ do evento GAME_STARTED

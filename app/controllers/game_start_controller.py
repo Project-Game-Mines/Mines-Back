@@ -66,7 +66,8 @@ async def start_game(
     try:
         result = await service.start_game(
             user_id=body.user_id,
-            bet_amount=body.bet_amount
+            bet_amount=body.bet_amount,
+            total_mines=body.total_mines
         )
 
         return result
