@@ -1,3 +1,4 @@
+# game services
 import random
 import uuid
 from datetime import datetime
@@ -49,10 +50,10 @@ class GameService:
             raise Exception("Não deve apostar 0 ou menos")
         
         if total_mines > 20:
-            raise UnauthorizedError('quantidade de minas invalida!!')
+            raise UnauthorizedError('quantidade de minas invalida !')
         
-        total_cells = 24
-        mine_positions = random.sample(range(total_cells), total_mines)
+        total_cells = 25
+        mine_positions = random.sample(range(total_cells - 1), total_mines)
 
         # 2) pegar configuração ativa
         # config = self.config_repo.get_active_config()
@@ -86,7 +87,7 @@ class GameService:
                 {
                     "matchId": match_id,
                     "userId": user_id,
-                    "totalCells": total_cells,
+                    "totalCells": total_cells ,
                     "totalMines": total_mines
                 }
             )
