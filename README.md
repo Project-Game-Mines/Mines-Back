@@ -17,7 +17,7 @@ RabbitMQ: Broker de mensagens utilizado para comunicação assíncrona. Ele gere
 Clone o repositório:
 
 ```powershell
-git clone https://github.com/alicevital/Mines-Back.git
+git clone https://github.com/Project-Game-Mines/Mines-Back.git
 ```
 Suba os containers no Docker
 
