@@ -1,6 +1,6 @@
-from app.controllers.game_ws_controller import ws_send_to_user
-
 async def dispatch_event(rabbitmq, user_id: str, event: str, data: dict):
+    from app.controllers.game_ws_controller import ws_send_to_user
+
     """
     Publica um evento no RabbitMQ e envia pelo WebSocket.
     """

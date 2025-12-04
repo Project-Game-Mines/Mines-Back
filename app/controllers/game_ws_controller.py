@@ -1,7 +1,10 @@
 from fastapi import APIRouter, WebSocket
+import json
+
+from app.utils.process_events import process_events_ws
+
 
 WebSocketRouter = APIRouter()
-
 
 active_connections = {}
 
@@ -27,7 +30,23 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
 
     try:
         while True:
-            await websocket.receive_text() 
+          
+            raw = await websocket.receive_text()
+
+            try:
+                msg = json.loads(raw)
+                event = msg.get("event")
+                data = msg.get("data", {})
+
+                # Processa o evento
+                await process_events_ws(event, data)
+
+
+            except Exception as e:
+                await websocket.send_json({
+                    "event": "Error",
+                    "message": str(e)
+                })
 
     except:
       
