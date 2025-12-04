@@ -21,12 +21,13 @@ async def process_events_ws(event: str, data: dict):
     rabbit = RabbitMQPublisher(RABBITMQ_URI)
 
     # Services
-    game_start = GameService(match_repo, wallet_repo, rabbit)
-    game_step = GameStepService(match_repo, rabbit, wallet_repo)
-    game_stop = GameStopService(match_repo, wallet_repo, rabbit)
+    
 
     # eventos
     if event == "GAME_START":
+
+        game_start = GameService(match_repo, wallet_repo, rabbit)
+
         bet = data.get("bet_amount")
         user_id = data.get("user_id")
         total_mines = data.get("total_mines")
@@ -34,12 +35,18 @@ async def process_events_ws(event: str, data: dict):
         return response
 
     elif event == "GAME_STEP":
+
+        game_step = GameStepService(match_repo, rabbit, wallet_repo)
+
         match_id = data["match_id"]
         cell = data["cell"]
         response = await game_step.step_in_game(cell, match_id)
         return response
 
     elif event == "GAME_CASHOUT":
+        
+        game_stop = GameStopService(match_repo, wallet_repo, rabbit)
+
         match_id = data["match_id"]
         response = await game_stop.stop_game(match_id)
         return response
