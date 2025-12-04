@@ -1,20 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from app.core.config import RABBITMQ_URI
-
 from app.database.db import get_database
-
 from app.schemas.cashout_schemas import CashoutSchema
 from app.schemas.step_schema import GameStepRequest, GameStepResponse
-
 from app.repositories.match_repository import MatchRepository
 from app.repositories.wallets_repository import WalletRepository
-
 from app.services.game_steps_service import GameStepService
 from app.services.game_stop_service import GameStopService
-
 from app.utils.rabbitmq import RabbitMQPublisher
-
-
 
 MidGameController = APIRouter(tags=["Rotas Mid Game"])
 
@@ -27,9 +20,10 @@ def get_db():
     finally:
         pass
 
-
-# --- Injeção de dependências do Step --- 
+ 
 def get_game_step_service(db=Depends(get_db)):
+
+    '''Inicia o game'''
 
     match_repo = MatchRepository(db["matches"])
     wallet_repo = WalletRepository(db)

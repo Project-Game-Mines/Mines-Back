@@ -114,7 +114,8 @@ class GameStepService:
             user_id,
             "STEP_RESULT",
             {
-                "step": cell,
+                "step": current_step,
+                "cell": cell,
                 "isMine": False
             }
         )
