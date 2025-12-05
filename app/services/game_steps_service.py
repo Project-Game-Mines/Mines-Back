@@ -59,15 +59,21 @@ class GameStepService:
 
         # 2) Se for última casa:
         safe_cells = total_cells - len(mines_positions)
+
+        progress = current_step / safe_cells
+        prize = round(bet_amount * (1 + progress), 2)
+
         if current_step >= safe_cells:
-            
-            prize = bet_amount * 2
+
             # Envia evento GAME_WIN
             await dispatch_event(
                 self.rabbitmq,
                 user_id,
                 "GAME_WIN",
-                {"prize": prize}
+                {
+                "prize": prize,
+                "mines_positions": mines_positions
+                 }
             )
 
             # Envia evento BALANCE_UPDATED
@@ -75,7 +81,7 @@ class GameStepService:
                 self.rabbitmq,
                 user_id,
                 "BALANCE_UPDATED",
-                {"balance": prize}
+                {"prize": prize}
             )
 
             # Credita aposta X 2
@@ -83,7 +89,8 @@ class GameStepService:
             self.match_repo.finish_match(matches_id, current_step, "win")
 
             # Finalizar partida
-            return {"event": "GAME_WIN", "prize": prize}
+            return {"event": "GAME_WIN", "prize": prize,
+                    "mines_positions": mines_positions}
 
         # variavel da carteira
         wallet = self.wallet_repo.get_balance(user_id)
@@ -107,7 +114,8 @@ class GameStepService:
             # Finalizar partida
             self.match_repo.finish_match(matches_id, current_step, "lose")
 
-            return {"event": "GAME_LOSE"}
+            return {"event": "GAME_LOSE",
+                    "mines_positions": mines_positions}
 
         # Se não for mina:
         # publicar STEP_RESULT via Rabbitmq + WS
@@ -118,7 +126,8 @@ class GameStepService:
             {
                 "step": current_step,
                 "cell": cell,
-                "isMine": False
+                "isMine": False,
+                "prize": prize
             }
         )
 
@@ -128,5 +137,6 @@ class GameStepService:
         return {
             "event": "STEP_RESULT",
             "step": cell,
-            "isMine": False
+            "isMine": False,
+            "prize": prize
         }
