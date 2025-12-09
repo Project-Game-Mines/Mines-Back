@@ -1,6 +1,4 @@
-# game services
 import random
-import uuid
 from datetime import datetime
 
 from app.middlewares.exceptions import InternalServerError, UnauthorizedError
@@ -8,8 +6,8 @@ from app.repositories.match_repository import MatchRepository
 from app.repositories.wallets_repository import WalletRepository
 # from app.repositories.game_config_repository import GameConfigRepository
 
+from app.utils.dispatcher import dispatch_event_ws
 from app.utils.rabbitmq import RabbitMQPublisher
-from app.utils.dispatcher import dispatch_event
 
 
 class GameService:
@@ -80,27 +78,36 @@ class GameService:
 
         # 7) notificar WebSocket e RabbitMQ do evento GAME_STARTED
         try:
-            await dispatch_event(
-                self.rabbitmq,
+            body = {
+                "matchId": match_id,
+                "userId": user_id,
+                "totalCells": total_cells ,
+                "totalMines": total_mines
+            }
+
+            await dispatch_event_ws(
                 user_id,
                 "GAME_STARTED",
-                {
-                    "matchId": match_id,
-                    "userId": user_id,
-                    "totalCells": total_cells ,
-                    "totalMines": total_mines
-                }
+                body
             )
+            try:
+
+                await self.rabbitmq.publish(
+                    routing_key="GAME_STARTED",
+                    body=body
+                )
+
+                
+
+            except Exception as e:
+                raise InternalServerError(
+                    f"Não foi possivel publicar GAME_STARTED NO RABBITMQ: {e}"
+                )
 
         except Exception as e:
             raise InternalServerError(
-                f"Não foi possivel publicar GAME_STARTED via RabbitMQ ou WEBSOCKETS: {e}"
+                f"Não foi possivel publicar GAME_STARTED WEBSOCKETS: {e}"
             )
 
         # 8) retorno do POST
-        return {
-            "match_id": match_id,
-            "total_cells": total_cells,
-            "total_mines": total_mines,
-            "mine_positions": mine_positions
-        }
+        return body

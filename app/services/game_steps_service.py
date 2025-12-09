@@ -4,7 +4,7 @@ from app.middlewares.exceptions import NotFoundError, UnauthorizedError
 from app.repositories.match_repository import MatchRepository
 from app.repositories.wallets_repository import WalletRepository
 from app.utils.rabbitmq import RabbitMQPublisher
-from app.utils.dispatcher import dispatch_event
+from app.utils.dispatcher import dispatch_event_ws
 
 
 class GameStepService:
@@ -66,19 +66,31 @@ class GameStepService:
         if current_step >= safe_cells:
 
             # Envia evento GAME_WIN
-            await dispatch_event(
-                self.rabbitmq,
+            body_win = {
+                "matchId": matches_id,
+                "userId": user_id,
+                "prize": prize,
+                "mines_positions": mines_positions,
+                "steps": current_step
+            }
+            
+            await dispatch_event_ws(
                 user_id,
                 "GAME_WIN",
-                {
-                "prize": prize,
-                "mines_positions": mines_positions
-                 }
+                body_win
             )
 
+            # Publica no RabbitMQ
+            try:
+                await self.rabbitmq.publish(
+                    routing_key="GAME_WIN",
+                    body=body_win
+                )
+            except Exception as e:
+                print(f"❌ Erro ao publicar GAME_WIN no RabbitMQ: {e}")
+
             # Envia evento BALANCE_UPDATED
-            await dispatch_event(
-                self.rabbitmq,
+            await dispatch_event_ws(
                 user_id,
                 "BALANCE_UPDATED",
                 {"prize": prize}
@@ -102,14 +114,28 @@ class GameStepService:
 
             # Se for mina:
             # publicar GAME_LOSE via Rabbitmq + WS
-            await dispatch_event(
-                self.rabbitmq,
+            body_lose = {
+                "matchId": matches_id,
+                "userId": user_id,
+                "cell": cell,
+                "mines_positions": mines_positions,
+                "steps": current_step
+            }
+            
+            await dispatch_event_ws(
                 user_id,
                 "GAME_LOSE",
-                {
-                    "mines_positions": mines_positions
-                }
+                body_lose
             )
+
+            # Publica no RabbitMQ
+            try:
+                await self.rabbitmq.publish(
+                    routing_key="GAME_LOSE",
+                    body=body_lose
+                )
+            except Exception as e:
+                pass
 
             # Finalizar partida
             self.match_repo.finish_match(matches_id, current_step, "lose")
@@ -119,17 +145,28 @@ class GameStepService:
 
         # Se não for mina:
         # publicar STEP_RESULT via Rabbitmq + WS
-        await dispatch_event(
-            self.rabbitmq,
+        body_step = {
+            "matchId": matches_id,
+            "userId": user_id,
+            "step": current_step,
+            "cell": cell,
+            "isMine": False,
+            "prize": prize
+        }
+        
+        await dispatch_event_ws(
             user_id,
             "STEP_RESULT",
-            {
-                "step": current_step,
-                "cell": cell,
-                "isMine": False,
-                "prize": prize
-            }
+            body_step
         )
+
+        try:
+            await self.rabbitmq.publish(
+                routing_key="STEP_RESULT",
+                body=body_step
+            )
+        except Exception as e:
+            print(f"Erro ao publicar STEP_RESULT no RabbitMQ: {e}")
 
         # atualizar step no banco
         self.match_repo.update_step(matches_id, current_step)

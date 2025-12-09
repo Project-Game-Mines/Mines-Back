@@ -1,49 +1,69 @@
 import json
-import threading
-import pika
+from aio_pika import connect_robust, Message, ExchangeType
+
 
 class RabbitMQPublisher:
     def __init__(self, url: str):
-        params = pika.URLParameters(url)
-        self.connection = pika.BlockingConnection(params)
-        self.channel = self.connection.channel()
+        self.url = url
+        self.connection = None
+        self.channel = None
+        self.exchange = None
+        self.queue = None
+
+        # routing keys 
+        self.routing_keys = [
+            "GAME_STARTED",
+            "GAME_LOSE",
+            "STEP_RESULT",
+            "BALANCE_UPDATED",
+            "GAME_CASHOUT",
+        ]
+
     
-    def create_exchange(self, exchange: str):
-        self.channel.exchange_declare(
-            exchange=exchange,
-            exchange_type="topic",
+    async def connect(self):
+        if self.connection and not self.connection.is_closed:
+            return  # já está conectado
+
+        # cria conexão robusta
+        self.connection = await connect_robust(self.url)
+        self.channel = await self.connection.channel()
+
+        # exchange DIRECT
+        self.exchange = await self.channel.declare_exchange(
+            "mines.events",
+            ExchangeType.DIRECT,
             durable=True
         )
 
-    def create_queue(self, queue: str, exchange: str, routing_key: str):
-        self.channel.queue_declare(queue=queue, durable=True)
-        self.channel.queue_bind(
-            queue=queue,
-            exchange=exchange,
-            routing_key=routing_key
+        # fila onde o consumer lê
+        self.queue = await self.channel.declare_queue(
+            "mines.games",
+            durable=True
         )
 
-    def publish(self, exchange: str, routing_key: str, body: dict):
-        self.channel.basic_publish(
-            exchange=exchange,
-            routing_key=routing_key,
-            body=json.dumps(body)
+        # bind de todas routing keys
+        for rk in self.routing_keys:
+            await self.queue.bind(self.exchange, routing_key=rk)
+
+
+
+    async def publish(self, routing_key: str, body: dict):
+        if self.exchange is None:
+            # reconecta automaticamente
+            await self.connect()
+
+        msg = Message(
+
+            json.dumps(body).encode(),
+            delivery_mode=2,  
+
         )
 
-    def start_consumer(self, queue: str, callback):
-        def _consume():
-            def _callback(ch, method, properties, body):
-                data = json.loads(body)
-                callback(data)
+        await self.exchange.publish(msg, routing_key=routing_key)
+        
 
-            self.channel.basic_consume(
-                queue=queue,
-                on_message_callback=_callback,
-                auto_ack=True
-            )
+    async def start_consumer(self, callback):
+        if self.queue is None:
+            await self.connect()
 
-            print(f"[RabbitMQ] Consumindo fila '{queue}'...")
-            self.channel.start_consuming()
-
-        thread = threading.Thread(target=_consume, daemon=True)
-        thread.start()
+        await self.queue.consume(callback, no_ack=False)

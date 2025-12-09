@@ -2,7 +2,7 @@ from app.repositories.match_repository import MatchRepository
 from app.repositories.wallets_repository import WalletRepository
 from app.utils.rabbitmq import RabbitMQPublisher
 
-from app.utils.dispatcher import dispatch_event
+from app.utils.dispatcher import dispatch_event_ws
 
 
 class GameStopService:
@@ -51,8 +51,7 @@ class GameStopService:
         if prize > 0:
             self.wallet_repo.credit(user_id, prize, match_id)
 
-            await dispatch_event(
-                self.rabbitmq,
+            await dispatch_event_ws(
                 user_id,
                 "BALANCE_UPDATED",
                 {
@@ -62,17 +61,28 @@ class GameStopService:
 
         self.match_repo.finish_match(match_id, current_step, "cashout")
 
-        await dispatch_event(
-            self.rabbitmq,
+        body = {
+            "matchId": match_id,
+            "userId": user_id,
+            "steps": current_step,
+            "prize": prize,
+            "mines_positions": match['mines_positions']
+        }
+
+        await dispatch_event_ws(
             user_id,
             "GAME_CASHOUT",
-            {
-                "match_id": match_id,
-                "steps": current_step,
-                "prize": prize,
-                "mines_positions": match['mines_positions']
-            }
+            body
         )
+
+        # Publica no RabbitMQ
+        try:
+            await self.rabbitmq.publish(
+                routing_key="GAME_CASHOUT",
+                body=body
+            )
+        except Exception as e:
+            print(f"Erro ao publicar GAME_CASHOUT no RabbitMQ: {e}")
 
         return {
             "event": "GAME_CASHOUT",
