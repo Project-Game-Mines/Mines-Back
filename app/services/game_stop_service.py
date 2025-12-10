@@ -1,3 +1,4 @@
+from app.middlewares.exceptions import NotFoundError, UnauthorizedError
 from app.repositories.match_repository import MatchRepository
 from app.repositories.wallets_repository import WalletRepository
 from app.utils.rabbitmq import RabbitMQPublisher
@@ -21,24 +22,22 @@ class GameStopService:
 
         match = self.match_repo.get_match_by_id(match_id)
 
+        if not match:
+            raise NotFoundError("partida não encontrada")
+
+        if match["status"] != "running":
+            raise UnauthorizedError("Partida já foi terminada!")
+
         current_step = match["current_step"]
+
+        if current_step == 0:
+            raise UnauthorizedError("É preciso de pelo menos um STEP_RESULT para CASHOUT")
+    
         total_cells = 25
         total_mines =  len(match['mines_positions'])
         bet_amount = match["bet_amount"]
         user_id = match['user_id']
-
-        if not match:
-            raise Exception("partida não encontrada")
-
-        if match["user_id"] != user_id:
-            raise Exception("Unauthorized")
-
-        if match["status"] != "running":
-            raise Exception("Partida já foi terminada!")
         
-        if current_step == 0:
-            raise Exception("É preciso de pelo menos um STEP_RESULT para CASHOUT")
-
 
         safe_cells = total_cells - total_mines
 
@@ -76,13 +75,11 @@ class GameStopService:
         )
 
         # Publica no RabbitMQ
-        try:
-            await self.rabbitmq.publish(
-                routing_key="GAME_CASHOUT",
-                body=body
-            )
-        except Exception as e:
-            print(f"Erro ao publicar GAME_CASHOUT no RabbitMQ: {e}")
+        await self.rabbitmq.publish(
+            routing_key="GAME_CASHOUT",
+            body=body
+        )
+
 
         return {
             "event": "GAME_CASHOUT",

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.core.config import RABBITMQ_URI
 from app.database.db import get_database
 from app.schemas.game_start_schemas import GameStartRequest, GameStartResponse
-from app.services.game_services import GameService
+from app.services.game_start_services import GameService
 from app.repositories.match_repository import MatchRepository
 from app.repositories.wallets_repository import WalletRepository
 from app.utils.rabbitmq import RabbitMQPublisher

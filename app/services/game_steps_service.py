@@ -38,7 +38,7 @@ class GameStepService:
             Envia evento BALANCE_UPDATED
         """
 
-        # 1) procura e valida a partida
+        # 1) Validações de parametros 
         mines_match = self.match_repo.get_match_by_id(matches_id)
         # config = self.config_repo.get_active_config(mines_match['game_id'])
         if not mines_match:
@@ -47,10 +47,15 @@ class GameStepService:
         if mines_match['status'] != "running":
             raise UnauthorizedError('Esse jogo já se finalizou, requisição negada!')
         
+
+        if cell < 0 or cell >= mines_match['total_cells']:
+            raise UnauthorizedError("Casa inválida")
+        
+        elif cell in mines_match["opened_cells"]:
+            raise UnauthorizedError("Casa já jogada anteriormente")
+        
         # 1.5) Pegar current step do repositorio de config
-        # total_cells = config['total_cells']
-        # teste:
-        total_cells = 25
+        
 
         user_id = mines_match["user_id"]
         bet_amount = mines_match["bet_amount"]
@@ -58,7 +63,7 @@ class GameStepService:
         mines_positions = mines_match["mines_positions"]
 
         # 2) Se for última casa:
-        safe_cells = total_cells - len(mines_positions)
+        safe_cells = mines_match['total_cells'] - len(mines_positions)
 
         progress = current_step / safe_cells
         prize = round(bet_amount * (1 + progress), 2)
@@ -81,19 +86,23 @@ class GameStepService:
             )
 
             # Publica no RabbitMQ
-            try:
-                await self.rabbitmq.publish(
-                    routing_key="GAME_WIN",
-                    body=body_win
-                )
-            except Exception as e:
-                print(f"❌ Erro ao publicar GAME_WIN no RabbitMQ: {e}")
+           
+            await self.rabbitmq.publish(
+                routing_key="GAME_WIN",
+                body=body_win
+            )
+            
 
             # Envia evento BALANCE_UPDATED
             await dispatch_event_ws(
                 user_id,
                 "BALANCE_UPDATED",
                 {"prize": prize}
+            )
+
+            await self.rabbitmq.publish(
+                routing_key="BALANCE_UPDATED",
+                body=body_win
             )
 
             # Credita aposta X 2
@@ -103,11 +112,6 @@ class GameStepService:
             # Finalizar partida
             return {"event": "GAME_WIN", "prize": prize,
                     "mines_positions": mines_positions}
-
-        # variavel da carteira
-        wallet = self.wallet_repo.get_balance(user_id)
-        if not wallet:
-            raise NotFoundError("Carteira não encontrada")
         
         # 3) Valida se a casa contém mina:
         if cell in mines_positions:
@@ -123,19 +127,14 @@ class GameStepService:
             }
             
             await dispatch_event_ws(
-                user_id,
-                "GAME_LOSE",
-                body_lose
+                user_id, "GAME_LOSE", body_lose
             )
 
             # Publica no RabbitMQ
-            try:
-                await self.rabbitmq.publish(
-                    routing_key="GAME_LOSE",
-                    body=body_lose
-                )
-            except Exception as e:
-                pass
+            await self.rabbitmq.publish(
+                routing_key="GAME_LOSE", body=body_lose
+            )
+
 
             # Finalizar partida
             self.match_repo.finish_match(matches_id, current_step, "lose")
@@ -155,21 +154,15 @@ class GameStepService:
         }
         
         await dispatch_event_ws(
-            user_id,
-            "STEP_RESULT",
-            body_step
+            user_id, "STEP_RESULT", body_step
         )
 
-        try:
-            await self.rabbitmq.publish(
-                routing_key="STEP_RESULT",
-                body=body_step
-            )
-        except Exception as e:
-            print(f"Erro ao publicar STEP_RESULT no RabbitMQ: {e}")
-
+        await self.rabbitmq.publish(
+            routing_key="STEP_RESULT", body=body_step
+        )
+        
         # atualizar step no banco
-        self.match_repo.update_step(matches_id, current_step)
+        self.match_repo.update_step(matches_id, current_step, cell)
 
         return {
             "event": "STEP_RESULT",
