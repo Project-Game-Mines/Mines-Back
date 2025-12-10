@@ -1,5 +1,5 @@
 from fastapi import APIRouter, WebSocket
-import json
+
 from app.database.db import get_database
 from app.core.config import RABBITMQ_URI
 from app.repositories.match_repository import MatchRepository
@@ -45,37 +45,59 @@ EVENTS_HANDLERS = {
     "GAME_CASHOUT": handle_game_cashout,
 }
 
-async def process_events_ws(event: str, data: dict):
+async def process_events_ws(event: str, data: dict, user_id: str):
     handler = EVENTS_HANDLERS.get(event)
 
     if not handler:
         return {"error": f"Evento inválido: {event}"}
     
     return await handler(data, services)
-    
 
 WebSocketRouter = APIRouter()
 
-@WebSocketRouter.websocket("/ws/{user_id}")
-async def websocket_endpoint(websocket: WebSocket, user_id: str):
+@WebSocketRouter.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
 
     '''Função que gerencia a conexão, processa o evento e fecha a conexão após isso'''
 
     await websocket.accept()
-    active_connections[user_id] = websocket
+    current_user_id = None
 
     try:
+
+        try:
+            initial_data = await websocket.receive_json()
+            current_user_id = initial_data.get("user_id")
+
+            if not current_user_id:
+                await websocket.close(code=1008, reason="user id required")
+                return
+            
+            active_connections[current_user_id] = websocket
+
+            if "event" in initial_data:
+                event = initial_data.get("event")
+                data = initial_data.get("data", {})
+
+                try:
+                    await process_events_ws(event, data, user_id=current_user_id)
+                except Exception as e:
+                    await websocket.send_json({"event": "Error", "message": str(e)})
+        except Exception as e:
+            # Se falhar ao ler o JSON inicial ou validar
+            await websocket.close(code=1008, reason="Invalid authentication payload")
+            return
+
         while True:
           
-            raw = await websocket.receive_text()
+            raw = await websocket.receive_json()
 
             try:
-                msg = json.loads(raw)
-                event = msg.get("event")
-                data = msg.get("data", {})
+                event = raw.get("event")
+                data = raw.get("data", {})
 
                 # Processa o evento
-                await process_events_ws(event, data)
+                await process_events_ws(event, data, user_id=current_user_id)
 
 
             except Exception as e:
@@ -84,13 +106,5 @@ async def websocket_endpoint(websocket: WebSocket, user_id: str):
                     "message": str(e)
                 })
 
-    except:
-      
-        ws = active_connections.get(user_id)
-        if ws:
-            try:
-                await ws.close()
-            except:
-                pass
-        
-        active_connections.pop(user_id, None)
+    except Exception as e:
+        print(f"Erro na conexão WS: {e}")
