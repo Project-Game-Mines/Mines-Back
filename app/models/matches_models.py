@@ -12,7 +12,8 @@ class GameStatus(str, Enum):
 class MatchModel(BaseModel):
     id: Optional[str] = None
     user_id: str
-    game_id: str
+    total_mines: int
+    opened_cells: List[int] = Field(default_factory=list, default=[])  
     bet_amount: float
     current_step: int = Field(default=0)
     mines_positions: List[int]

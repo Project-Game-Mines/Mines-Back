@@ -3,24 +3,18 @@ from bson import ObjectId
 from pymongo.collection import Collection
 
 from app.middlewares.exceptions import NotFoundError
+from app.schemas.match_schemas import MatchCreate
 
 
 class MatchRepository:
     def __init__(self, collection: Collection):
         self.collection = collection
 
-    def create_match(self, match):
-
-        if hasattr(match, "model_dump"):
-            data = match.model_dump()
-
-        elif isinstance(match, dict):
-            data = match
-        else:
-            raise TypeError("match deve ser dict ou Pydantic Model")
-
+    def create_match(self, match: MatchCreate):
+        data = match.model_dump()
         result = self.collection.insert_one(data)
         return str(result.inserted_id)
+
 
     def get_match_by_id(self, match_id):
         try:
@@ -31,11 +25,14 @@ class MatchRepository:
         except:
             pass
 
-    def update_step(self, match_id, current_step):
+    def update_step(self, match_id, current_step, cell):
         try:
             return self.collection.update_one(
                 {"_id": ObjectId(match_id)},
-                {"$set": {"current_step": current_step}}
+                {
+                    "$set": {"current_step": current_step},
+                    "$push": {"opened_cells": cell}
+                }
             )
         except Exception as e:
             raise Exception(f"Erro ao atualizar current_step: {str(e)}")
