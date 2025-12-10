@@ -1,56 +1,60 @@
 from fastapi import APIRouter, WebSocket
 import json
-
 from app.database.db import get_database
 from app.core.config import RABBITMQ_URI
-
 from app.repositories.match_repository import MatchRepository
 from app.repositories.wallets_repository import WalletRepository
-
 from app.utils.dispatcher import active_connections
 from app.utils.rabbitmq import RabbitMQPublisher
-
 from app.services.game_services import GameService
 from app.services.game_steps_service import GameStepService
 from app.services.game_stop_service import GameStopService
-
-
 
 db = get_database()
 match_repo = MatchRepository(db["matches"])
 wallet_repo = WalletRepository(db)
 rabbit = RabbitMQPublisher(RABBITMQ_URI)
 
-game_start_service = GameService(match_repo, wallet_repo, rabbit)
-game_step_service = GameStepService(match_repo, rabbit, wallet_repo)
-game_stop_service = GameStopService(match_repo, wallet_repo, rabbit)
+services = {
+    "start": GameService(match_repo, wallet_repo, rabbit),
+    "step": GameStepService(match_repo, rabbit, wallet_repo),
+    "stop": GameStopService(match_repo, wallet_repo, rabbit),
+}
 
+async def handle_game_start(data, services):
+    return await services["start"].start_game(
+        user_id=data.get("user_id"),
+        bet_amount=data.get("bet_amount"),
+        total_mines=data.get("total_mines")
+    )
 
-WebSocketRouter = APIRouter()
+async def handle_game_step(data, services):
+    return await services["step"].step_in_game(
+        matches_id=data.get("match_id"),
+        cell=data.get("cell")
+    )
 
+async def handle_game_cashout(data, services):
+    return await services["stop"].stop_game(
+        match_id=data.get("match_id")
+    )
+
+EVENTS_HANDLERS = {
+    "GAME_START": handle_game_start,
+    "GAME_STEP": handle_game_step,
+    "GAME_CASHOUT": handle_game_cashout,
+}
 
 async def process_events_ws(event: str, data: dict):
+    handler = EVENTS_HANDLERS.get(event)
 
-    if event == "GAME_START":
-        await game_start_service.start_game(
-            user_id=data.get("user_id"),
-            bet_amount=data.get("bet_amount"),
-            total_mines=data.get("total_mines")
-        )
+    if not handler:
+        return {"error": f"Evento inválido: {event}"}
+    
+    return await handler(data, services)
+    
 
-    elif event == "GAME_STEP":
-        await game_step_service.step_in_game(
-            cell=data["cell"],
-            matches_id=data["match_id"]
-        )
-
-    elif event == "GAME_CASHOUT":
-        await game_stop_service.stop_game(
-            match_id=data["match_id"]
-        )
-
-    return {"error": "Evento inválido"}
-
+WebSocketRouter = APIRouter()
 
 @WebSocketRouter.websocket("/ws/{user_id}")
 async def websocket_endpoint(websocket: WebSocket, user_id: str):
