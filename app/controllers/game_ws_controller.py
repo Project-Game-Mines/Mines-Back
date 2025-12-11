@@ -6,7 +6,7 @@ from app.repositories.match_repository import MatchRepository
 from app.repositories.wallets_repository import WalletRepository
 from app.utils.dispatcher import active_connections
 from app.utils.rabbitmq import RabbitMQPublisher
-from app.services.game_services import GameService
+from app.services.game_start_services import GameService
 from app.services.game_steps_service import GameStepService
 from app.services.game_stop_service import GameStopService
 
@@ -21,20 +21,24 @@ services = {
     "stop": GameStopService(match_repo, wallet_repo, rabbit),
 }
 
-async def handle_game_start(data, services):
+
+async def handle_game_start(data, services, user_id):
     return await services["start"].start_game(
-        user_id=data.get("user_id"),
+        user_id=user_id,
         bet_amount=data.get("bet_amount"),
-        total_mines=data.get("total_mines")
+        total_mines=data.get("total_mines"),
+        total_cells=data.get("total_cells")
     )
 
-async def handle_game_step(data, services):
+
+async def handle_game_step(data, services, user_id):
     return await services["step"].step_in_game(
         matches_id=data.get("match_id"),
         cell=data.get("cell")
     )
 
-async def handle_game_cashout(data, services):
+
+async def handle_game_cashout(data, services, user_id):
     return await services["stop"].stop_game(
         match_id=data.get("match_id")
     )
@@ -50,8 +54,9 @@ async def process_events_ws(event: str, data: dict, user_id: str):
 
     if not handler:
         return {"error": f"Evento inválido: {event}"}
-    
-    return await handler(data, services)
+
+    return await handler(data, services, user_id)
+
 
 WebSocketRouter = APIRouter()
 
