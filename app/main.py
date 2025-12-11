@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 import asyncio
 
+from fastapi.middleware.cors import CORSMiddleware
+
 from app.utils.rabbitmq import RabbitMQPublisher
 from app.core.config import RABBITMQ_URI
 
@@ -14,6 +16,16 @@ from app.controllers.game_config_controller import GameConfigRouter
 
 app = FastAPI(title="Mines Academy")
 
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Rotas
 app.include_router(UserRouter)
 app.include_router(WalletRouter)
 app.include_router(WebSocketRouter)
