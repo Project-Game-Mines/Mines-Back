@@ -1,4 +1,4 @@
-# 🍬 Sweet Mines Backend
+# 🐰 Sweet Mines Backend
 Este é o projeto de backend para o jogo Sweet Mines, desenvolvido em Python utilizando o framework FastAPI.
 
 ## Recursos Principais
@@ -19,7 +19,7 @@ Clone o repositório:
 ```powershell
 git clone https://github.com/Project-Game-Mines/Mines-Back.git
 ```
-Suba os containers no Docker
+Crie as imagens e suba os containers no Docker
 
 ```powershell
 docker compose up --build
@@ -28,16 +28,44 @@ docker compose up --build
 ## Eventos
 
 ```python
-{"event":"GAME_START","data":{"bet_amount":100, "total_cells": 25, "total_mines":3}, "user_id":"693b1ae292177f973de0729c"}
+{"event":"GAME_START","data":{"bet_amount":100, "total_cells": 25, "total_mines":3}, "user_id":"..."}
 {"event":"GAME_STEP","data":{"match_id":"...","cell":5}}
 {"event":"GAME_CASHOUT","data":{"match_id":"..."}}
 {"event": "GAME_WIN","prize": prize, "mines_positions": mines_positions}
 {"event": "GAME_LOSE", "mines_positions": mines_positions}
 ```
 
+## Trechos
+
+Função de game_start:
 ```python
-safe_cells = total_cells - total_mines
+async def handle_game_start(data, services, user_id):
+    return await services["start"].start_game(
+        user_id=user_id,
+        bet_amount=data.get("bet_amount"),
+        total_mines=data.get("total_mines"),
+        total_cells=data.get("total_cells")
+    )
+```
+
+Campos de step_result:
+```python
+user_id = mines_match["user_id"]
+bet_amount = mines_match["bet_amount"]
+current_step = mines_match["current_step"] + 1
+mines_positions = mines_match["mines_positions"]
+
+safe_cells = mines_match['total_cells'] - len(mines_positions)
 progress = current_step / safe_cells
-prize_step = progress + (bet_amount * 0.02)
-prize = round(bet_amount * (1 + prize_step), 2)
+prize = round(bet_amount * (1 + progress), 2)
+```
+
+Função que mostra balanço na carteira: 
+```python
+def get_balance(self, user_id: str) -> WalletSchemas:
+        
+  wallet = self.collection_wallet.find_one({"user_id": user_id})
+        if not wallet:
+            return None
+        return WalletSchemas(**wallet)
 ```
