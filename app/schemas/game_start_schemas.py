@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 class GameStartedSchema(BaseModel):
-    match_id: str
+    matchId: str
     user_id: str
     total_cells: int
     total_mines: int
