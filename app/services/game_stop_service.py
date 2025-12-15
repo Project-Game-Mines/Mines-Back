@@ -33,7 +33,7 @@ class GameStopService:
         if current_step == 0:
             raise UnauthorizedError("É preciso de pelo menos um STEP_RESULT para CASHOUT")
     
-        total_cells = 25
+        total_cells = match['total_cells']
         total_mines =  len(match['mines_positions'])
         bet_amount = match["bet_amount"]
         user_id = match['user_id']
