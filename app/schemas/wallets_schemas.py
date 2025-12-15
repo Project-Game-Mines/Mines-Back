@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel
 
 
@@ -5,7 +6,7 @@ class WalletSchemas(BaseModel):
 
     user_id: str
     balance: float
-    updated_at: str  
+    updated_at: datetime  
 
 class WalletSchemasBody(BaseModel):
 

@@ -11,8 +11,8 @@ class MatchCreate(BaseModel):
     opened_cells: List[int]
     mines_positions: List[int]
     status: str 
-    created_at: str = datetime.utcnow().strftime("%d/%m/%Y-%H:%M") 
-    finished_at: Optional[str] = None
+    created_at: datetime = datetime.utcnow()
+    finished_at: Optional[datetime] = None
 
 
 class MatchDB(MatchCreate):

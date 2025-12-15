@@ -45,7 +45,7 @@ class MatchRepository:
                 {
                     "$set": {
                         "current_step": current_step,
-                        "finished_at": datetime.utcnow().strftime("%d/%m/%Y-%H:%M"),
+                        "finished_at": datetime.utcnow(),
                         "status": status
                     }
                 }
