@@ -9,7 +9,7 @@ class UserRepository:
 
     def create_user(self, user_dict: dict) -> dict:
 
-        user_dict["created_at"] = datetime.utcnow().strftime("%d/%m/%Y-%H:%M")
+        user_dict["created_at"] = datetime.utcnow()
 
         result = self.db.users.insert_one(user_dict)
 

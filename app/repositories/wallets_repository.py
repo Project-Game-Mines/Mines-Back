@@ -34,7 +34,7 @@ class WalletRepository:
         new_wallet = {
             "user_id": data.user_id,
             "balance": data.balance,
-            "updated_at": datetime.utcnow().strftime("%d/%m/%Y %H:%M")
+            "updated_at": datetime.utcnow()
         }
 
         self.collection_wallet.insert_one(new_wallet)
@@ -56,7 +56,7 @@ class WalletRepository:
 
         update_data = {
             "balance": new_balance,
-            "updated_at": datetime.utcnow().strftime("%d/%m/%Y %H:%M")
+            "updated_at": datetime.utcnow()
         }
 
         self.collection_wallet.update_one(
@@ -72,7 +72,7 @@ class WalletRepository:
             match_id=match_id,
             type="debit",
             amount=amount,   
-            timestamp=datetime.utcnow().strftime("%d/%m/%Y %H:%M")
+            timestamp=datetime.utcnow()
         )
 
         self.collection_transactions.insert_one(tx.model_dump())
@@ -92,7 +92,7 @@ class WalletRepository:
 
         update_data = {
             "balance": new_balance,
-            "updated_at": datetime.utcnow().strftime("%d/%m/%Y %H:%M")
+            "updated_at": datetime.utcnow()
         }
 
         self.collection_wallet.update_one(
@@ -108,7 +108,7 @@ class WalletRepository:
             match_id=match_id,
             type="credit",
             amount=amount,   
-            timestamp=datetime.utcnow().strftime("%d/%m/%Y %H:%M")
+            timestamp=datetime.utcnow()
         )
 
         self.collection_transactions.insert_one(tx.model_dump())
