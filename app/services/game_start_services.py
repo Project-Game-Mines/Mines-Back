@@ -57,7 +57,7 @@ class GameService:
             opened_cells=[],
             mines_positions=mine_positions,
             status="running"
-            )
+        )
 
         if not match_payload:
             raise NotFoundError("Nenhuma configuração do jogo ativa encontrada")
@@ -67,7 +67,7 @@ class GameService:
 
         self.wallet_repo.debit(user_id, bet_amount, match_id)
 
-        event_payload = GameStartedSchema(match_id=match_id, user_id=user_id, total_cells=total_cells, total_mines=total_mines)
+        event_payload = GameStartedSchema(matchId=match_id, user_id=user_id, total_cells=total_cells, total_mines=total_mines)
         
         body = event_payload.model_dump(by_alias=True)
 
