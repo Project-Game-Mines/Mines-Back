@@ -122,4 +122,4 @@ async def websocket_endpoint(websocket: WebSocket):
                 )
                 
     except Exception as e:
-        print(f"Erro na conexão WS: {e}")
+        pass

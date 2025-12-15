@@ -1,6 +1,5 @@
 # steps
 from app.middlewares.exceptions import NotFoundError, UnauthorizedError
-# from app.repositories.game_config_repository import GameConfigRepository
 from app.repositories.match_repository import MatchRepository
 from app.repositories.wallets_repository import WalletRepository
 from app.utils.rabbitmq import RabbitMQPublisher
@@ -12,14 +11,12 @@ class GameStepService:
     def __init__(
         self,
         match_repo: MatchRepository,
-        # config_repo: GameConfigRepository,
         rabbitmq: RabbitMQPublisher,
         wallet_repo: WalletRepository,
         
     ):
         self.match_repo = match_repo
         self.wallet_repo = wallet_repo
-        # self.config_repo = config_repo
         self.rabbitmq = rabbitmq
     
     async def step_in_game(self, cell: int, matches_id: str):
@@ -40,7 +37,6 @@ class GameStepService:
 
         # 1) Validações de parametros 
         mines_match = self.match_repo.get_match_by_id(matches_id)
-        # config = self.config_repo.get_active_config(mines_match['game_id'])
         if not mines_match:
             raise NotFoundError("Partida não encontrada")
 

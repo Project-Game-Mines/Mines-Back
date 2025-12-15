@@ -9,19 +9,10 @@ def get_mongo_client():
 
     if client is None:
         try:
-
-            print(f"Conectando a: {MONGO_URI}")
-
             client = MongoClient(MONGO_URI)
 
             client.admin.command('ping')  
-
-            print("Conectado ao MongoDB com auth!")
-
         except ConnectionFailure as e:
-
-            print(f"Falha na conexão: {e}")
-
             raise Exception("Falha na conexão com MongoDB")
         
     return client
