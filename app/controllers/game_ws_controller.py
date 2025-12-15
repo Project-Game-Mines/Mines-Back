@@ -111,5 +111,15 @@ async def websocket_endpoint(websocket: WebSocket):
                     "message": str(e)
                 })
 
+                rk = getattr(e, "routing_key", "InternalServerError")
+
+                await rabbit.publish_error(
+                    routing_key=rk,
+                    body={
+                        "detail": str(e),
+                        "scope": "websocket"
+                    }
+                )
+                
     except Exception as e:
         print(f"Erro na conexão WS: {e}")
