@@ -11,7 +11,6 @@ from app.controllers.wallets_controllers import WalletRouter
 from app.controllers.user_controller import UserRouter
 from app.controllers.status_controller import StatusRouter
 from app.controllers.mid_game_controller import MidGameController
-from app.controllers.game_config_controller import GameConfigRouter
 
 app = FastAPI(title="Mines Academy")
 
@@ -28,8 +27,8 @@ app.add_middleware(
 app.include_router(UserRouter)
 app.include_router(WalletRouter)
 app.include_router(WebSocketRouter)
-app.include_router(GameConfigRouter)
 app.include_router(StatusRouter)
+app.include_router()
 app.include_router(MidGameController)
 
 # instancia global
